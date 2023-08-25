@@ -6,7 +6,7 @@ import matplotlib.text
 def convert_string_to_pymath(strin):
     """ Convert a string to a 'math' format """
 
-    if strin.strip() is not '':
+    if strin.strip() != '':
         return '$' + strin.replace(' ', '\ ') + '$'
     else:
         return strin
