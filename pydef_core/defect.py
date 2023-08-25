@@ -26,15 +26,21 @@ class Defect(object):
         self.nb_sites = nb_sites
 
         if defect_type == 'Vacancy':
-            atomic_species = atom[0].split()[0]
+            atomic_species = ''
+            atomic_id = ''
+            self.chem_pot = 0
+            for atomi, chem_poti in zip(atom, chem_pot): # in case of multiple defects
+                atomic_species += atomi.split()[0]
+                atomic_id += atomi.replace(' ', '')
+                self.chem_pot += chem_poti # accumulate the chem. potential of all missing atoms
+
+            self.n = +1 # the number of defects should be 1 because the chem. potential is later subtracted as n*sum(chem_poti)
+            self.population = {atomic_species: +1}
             self.name = 'V_{' + atomic_species + '}'  # for matplotlib display
             if username is None:
-                self.ID = 'Vac_' + atom[0].replace(' ', '')
+                self.ID = 'Vac_' + atomic_id
             else:
                 self.ID = username
-            self.n = +1
-            self.chem_pot = chem_pot[0]
-            self.population = {atomic_species: +1}
 
         elif defect_type == 'Interstitial':
             atomic_species = atom[0].split()[0]

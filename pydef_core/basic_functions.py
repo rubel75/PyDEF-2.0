@@ -1,7 +1,12 @@
 import numpy as np
-import fractions
 import copy
 import os
+import sys
+import fractions
+import math
+from distutils.util import strtobool
+if sys.version_info[0] < 3:
+    raise Exception("Must be using Python 3")
 
 k_b=8.617e-5 #Boltzman Constant
 # -------------------------------------------------- PYVALENCE EXCEPTIONS --------------------------------------------------
@@ -51,7 +56,7 @@ def grep(content, string1, line_nb=False, string2=False, data_type='str', nb_fou
     :param line_nb: amongst the lines which contains 'thing', number of the line to be considered
     :param string2: string before which the data is located
     :param data_type: type of the data to be returned
-    :param nb_found: exact number of 'string1' to be found
+    :param nb_found: exact number of 'string1' to be found, or -1 for the last instance
     :param delimiter: if different than empty string, it is used to separate the elements found in the string
 
     Examples:
@@ -71,8 +76,10 @@ def grep(content, string1, line_nb=False, string2=False, data_type='str', nb_fou
 
     if len(found) == 0:
         return None  # Return None if nothing was found
+    elif nb_found == -1: # get last element of the list
+        found = [found[nb_found]] 
 
-    if isinstance(nb_found, int):
+    if isinstance(nb_found, int) and nb_found > 0:
         if len(found) != nb_found:
             # raise AssertionError()
             print('Warning! Found ' + str(len(found)) + ' times \"' + string1 + '\" instead of ' + str(nb_found) + ' as expected')
@@ -90,12 +97,14 @@ def grep(content, string1, line_nb=False, string2=False, data_type='str', nb_fou
             index_end = line[index_beg:].find(string2) + index_beg
             value = line[index_beg: index_end]
 
-        if delimiter is not '':
+        if delimiter != '':
             values = value.split(delimiter)
             if data_type == 'float':
                 return [float(v) for v in values]
             elif data_type == 'int':
                 return [int(float(v)) for v in values]
+            elif data_type == 'bool':
+                return [bool(strtobool(v.strip())) for v in values]
             else:
                 return values
         else:
@@ -103,6 +112,8 @@ def grep(content, string1, line_nb=False, string2=False, data_type='str', nb_fou
                 return float(value)
             elif data_type == 'int':
                 return int(value)
+            elif data_type == 'bool':
+                return bool(strtobool(value.strip()))
             else:
                 return value.strip()
 
@@ -126,9 +137,17 @@ def get_gcd(alist):
     """
     if len(alist)<2:
         return alist[0]
-    gcd = fractions.gcd(alist[0], alist[1])
+    if sys.version_info[1] < 9: # python 3.8.X and before
+        gcd = fractions.gcd(alist[0], alist[1])
+    else:
+        gcd = math.gcd(alist[0], alist[1])
+
     for f in range(2, len(alist)):
-        gcd = fractions.gcd(gcd, alist[f])
+        if sys.version_info[1] < 9: # python 3.8.X and before
+            gcd = fractions.gcd(gcd, alist[f])
+        else:
+            gcd = math.gcd(gcd, alist[f])
+
     return gcd
 
 

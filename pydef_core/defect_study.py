@@ -401,7 +401,7 @@ class DefectStudy(object):
                            '' + separator + ' %.5f' % cell.radius + '\n')
 
         f.write('\nTRANSITION LEVELS\n')
-        for level in self.get_transition_levels(np.linspace(self.fpp.xmin, self.fpp.xmax, 100000)): # HERE!!!
+        for level in self.get_transition_levels(np.linspace(self.fpp.xmin-0.5, self.fpp.xmax+0.5, 100000)): # HERE!!!
             f.write('%.0f' % level[3] + '\%.0f' % level[2] + separator + '%.5f' % level[0] + separator + 'eV\n')
 
         f.close()

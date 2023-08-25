@@ -42,17 +42,18 @@ class Cell(object):
         # ---------------------------------------------- CALCULATION TAGS ----------------------------------------------
 
         self._functional, self.functional_title = get_functional(self.outcar)  # functional used
-        self._nedos =  bf.grep(self.outcar, 'NEDOS =',  0, 'number of ions',  'int',   1)  # NEDOS
-        self._encut =  bf.grep(self.outcar, 'ENCUT  =', 0, 'eV',              'float', 1)  # ENCUT
-        self._ediff =  bf.grep(self.outcar, 'EDIFF  =', 0, 'stopping',        'float', 1)  # EDIFF
-        self._emin =   bf.grep(self.outcar, 'EMIN   =', 0, ';',               'float', 1)  # EMIN
-        self._emax =   bf.grep(self.outcar, 'EMAX   =', 0, 'energy-range',    'float', 1)  # EMAX
-        self._ismear = bf.grep(self.outcar, 'ISMEAR =', 0, ';',               'int',   1)  # ISMEAR
-        self._lorbit = int(bf.grep(self.outcar, 'LORBIT', 0, '0 simple, 1 ext', 'str',   1).split()[1])  # LORBIT
-        self._isym =   bf.grep(self.outcar, 'ISYM   =', 0, '0-nonsym',        'int',   1)  # ISYM
-        self._istart = bf.grep(self.outcar, 'ISTART =', 0, 'job',             'int',   1)  # ISTART
-        self._ispin =  bf.grep(self.outcar, 'ISPIN  =', 0, 'spin',            'int',   1)  # ISPIN
-        self._icharg = bf.grep(self.outcar, 'ICHARG =', 0, 'charge:',         'int',   1)  # ICHARG
+        self._nedos =  bf.grep(self.outcar, 'NEDOS =',  0, 'number of ions',  'int',   -1)  # NEDOS
+        self._encut =  bf.grep(self.outcar, 'ENCUT  =', 0, 'eV',              'float', -1)  # ENCUT
+        self._ediff =  bf.grep(self.outcar, 'EDIFF  =', 0, 'stopping',        'float', -1)  # EDIFF
+        self._emin =   bf.grep(self.outcar, 'EMIN   =', 0, ';',               'float', -1)  # EMIN
+        self._emax =   bf.grep(self.outcar, 'EMAX   =', 0, 'energy-range',    'float', -1)  # EMAX
+        self._ismear = bf.grep(self.outcar, 'ISMEAR =', 0, ';',               'int',   -1)  # ISMEAR
+        self._lorbit = int(bf.grep(self.outcar, 'LORBIT', 0, '0 simple, 1 ext', 'str',  -1).split()[1])  # LORBIT
+        self._isym =   bf.grep(self.outcar, 'ISYM   =', 0, '0-nonsym',        'int',   -1)  # ISYM
+        self._istart = bf.grep(self.outcar, 'ISTART =', 0, 'job',             'int',   -1)  # ISTART
+        self._ispin =  bf.grep(self.outcar, 'ISPIN  =', 0, 'spin',            'int',   -1)  # ISPIN
+        self._icharg = bf.grep(self.outcar, 'ICHARG =', 0, 'charge:',         'int',   -1)  # ICHARG
+        self._lsorbit = bf.grep(self.outcar, 'LSORBIT =', 0, 'spin-orbit',    'bool',   -1)  # LSORBIT
 
         # --------------------------------------------- SYSTEM PROPERTIES ----------------------------------------------
 
@@ -63,7 +64,7 @@ class Cell(object):
         self._atoms_valence = bf.grep(self.outcar, 'ZVAL   =', -1, delimiter=None, data_type='int')  # valence
         self._atoms = np.concatenate([[f + ' (' + str(g) + ')' for g in range(1, q + 1)]
                                       for f, q in zip(self._atoms_types, self._nb_atoms)])  # atoms list
-        self._nb_electrons = int(bf.grep(self.outcar, 'NELECT =', 0, 'total number', 'float', 1))  # number of electrons
+        self._nb_electrons = int(bf.grep(self.outcar, 'NELECT =', 0, 'total number', 'float', -1))  # number of electrons
         self._charge = sum(np.array(self._nb_atoms) * np.array(self._atoms_valence)) - self._nb_electrons  # charge
         self._orbitals = bf.grep(self.outcar, '# of ion', 0, 'tot', delimiter=None)
         self._z = bf.get_gcd(self._nb_atoms)
@@ -94,15 +95,17 @@ class Cell(object):
         self._volume = np.linalg.det(self._cell_parameters) * 1e-30  # volume in m^3
 
         # Energy & Density of states
-        self._total_energy = bf.grep(self.outcar, 'free  energy   TOTEN  =', -1, 'eV', 'float')
+        self._total_energy = bf.grep(content=self.outcar, \
+            string1='free  energy   TOTEN  =', line_nb=0, string2='eV', \
+            data_type='float', nb_found=-1)
         
         try:
             if self._ismear == 0:
-                self._fermi_energy = bf.grep(self.outcar, 'E-fermi :', 0, 'XC(G=0)', 'float', nb_found=1)
+                self._fermi_energy = bf.grep(self.outcar, 'E-fermi :', 0, 'XC(G=0)', 'float', nb_found=-1)
                 if self._fermi_energy == '':
-                    self._fermi_energy = bf.grep(self.outcar, 'E-fermi :', 0, 'float', nb_found=1)
+                    self._fermi_energy = bf.grep(self.outcar, 'E-fermi :', 0, 'float', nb_found=-1)
             else:
-                self._fermi_energy = bf.grep(self.outcar, ' BZINTS: Fermi energy:', -1, ';', 'float')
+                self._fermi_energy = bf.grep(self.outcar, ' BZINTS: Fermi energy:', 1, ';', 'float', nb_found=-1)
         except ValueError:
             self._fermi_energy = None
         if self._fermi_energy is None:
@@ -395,6 +398,10 @@ class Cell(object):
     @property
     def volume(self):
         return self._volume
+    
+    @property
+    def lsorbit(self):
+        return self._lsorbit
 
     def analyse_dos(self, doscar_content):
         """ Read the DOSCAR file """
@@ -1372,7 +1379,7 @@ def get_band_occupation(outcar, nkpts, functional):
         col_index = 2
     else:
         str_beg = '  band No.  band energies     occupation'
-        indices_beg = np.array([f[1] for f in bf.grep(outcar, str_beg)]) + 1
+        indices_beg = np.array([f[1] for f in bf.grep(outcar, str_beg)])[-nkpts:] + 1
         col_index = 1
 
     indices_end = np.array([outcar[f:].index('') for f in indices_beg])
@@ -1391,7 +1398,7 @@ def get_electrostatic_potentials(outcar, atoms):
     :param atoms: number of atoms of each atomic species (list of integers)
     :return: dictionary with the electrostatic potential for each atom """
 
-    index_beg = bf.grep(outcar, 'average (electrostatic) potential at core', nb_found=1)[0][1] + 3
+    index_beg = bf.grep(outcar, 'average (electrostatic) potential at core', nb_found=-1)[0][1] + 3
     try:
         index_end = outcar[index_beg:].index(' ')
     except ValueError as e :
@@ -1432,7 +1439,7 @@ def get_kpoints_weights_and_coords(outcar, nkpts, rec=False):
         
 def get_forces(outcar):
     nions = int(bf.grep(outcar, 'NIONS')[0][0].split()[-1])
-    lnb = bf.grep(outcar,'TOTAL-FORCE (eV/Angst)')[-1][1] 
+    lnb = bf.grep(outcar,'TOTAL-FORCE (eV/Angst)',nb_found=-1)[-1][1] 
     pos_forces = np.array([[float(x) for x in [x for x in line.split()]] for line in outcar[lnb+2:lnb+nions+2]])
     return pos_forces
 

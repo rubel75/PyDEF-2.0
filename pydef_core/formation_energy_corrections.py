@@ -37,8 +37,9 @@ def potential_alignment_correction(host_cell, defect_cell, defects, spheres_radi
     # Removing useless data
     for Defect in defects:
         if Defect.defect_type == 'Vacancy':
-            potentials_h.pop(Defect.atom[0])  # remove the electrostatic potential of the atom removed from the host cell data
-            atoms_h.remove(Defect.atom[0])
+            for atom in Defect.atom: # in case of multiple vacancies
+                potentials_h.pop(atom)  # remove the electrostatic potential of the atom removed from the host cell data
+                atoms_h.remove(atom)
         elif Defect.defect_type == 'Interstitial':
             potentials_d.pop(Defect.atom[0])  # remove the electrostatic potential of the atom added from the defect cell data
             atoms_pos_d.pop(Defect.atom[0])  # remove the position of the corresponding atom so the number of positions and potentials match
@@ -169,9 +170,12 @@ def get_bands_correction(host_cell, defect_cell, pot_al):
 
     bands_data = defect_cell.bands_data
 
-    if defect_cell.ispin == 1:
+    if (defect_cell.ispin == 1) and (not defect_cell.lsorbit): # no spin polarization, no SOC
         kpoints_weights = defect_cell.kpoints_weights
         max_occupation = 2.
+    elif defect_cell.lsorbit: # SOC activated
+        kpoints_weights = defect_cell.kpoints_weights
+        max_occupation = 1.
     else:
         kpoints_weights = list(defect_cell.kpoints_weights / 2.) * 2
         max_occupation = 1.
