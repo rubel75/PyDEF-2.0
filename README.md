@@ -1,3 +1,5 @@
+This fork adds compatibility with VASP 6, the spin-orbit coupling, and functionality to read a last record from OUTCAR file (e.g., the last total energy in a sequence of force relaxation steps).
+
 # PyDEF 2.1
 
 PyDEF 2.1 is a scientific program.
